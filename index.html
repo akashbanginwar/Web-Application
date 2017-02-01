@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<!--Bootstrap CDN close-->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
+    <title>Airbnb Web Application</title>
+	
+	
+	<script src="easysug/jquery.easy-autocomplete.min.js"></script> 
+	
+	<!-- CSS file -->
+	<link rel="stylesheet" href="easysug/easy-autocomplete.min.css"> 
+	<link rel="stylesheet" href="style.css"> 
+
+<!-- Additional CSS Themes file - not required-->
+<link rel="stylesheet" href="easysug/easy-autocomplete.themes.min.css"> 
+
+
+
+
+</head>
+<body>
+    <div class="container">
+	    <div id="googlemaps">
+    </div>
+	<div class="col-md-5">
+        <h1><center>Search Your Query</center></h1>
+        <br>
+<div class= "row1">
+        <input type="text" id="search" class="form-control" placeholder="Search ">
+        </div>
+		<div class="row">
+		          <label class="c-input c-radio">
+					  <input id="Ascending" value="asc" name="radio" type="radio">
+					  <span class="c-indicator"></span>
+					  Ascending
+					</label>
+				<label class="c-input c-radio">
+					  <input id="Descending" value="desc" name="radio" type="radio">
+					  <span class="c-indicator"></span>
+					  Descending
+					</label>
+                </div>
+
+<div class="row1">
+        <button id="searchbtn" class="btn btn-primary btn-block">Search</button>
+ </div>
+        <h2>Results</h2>
+        <table class="table table-striped" id="results">
+            <thead>
+                <tr>
+                    <th>Address</th>
+                    <th>Price</th>
+                    <th>Contact ID</th>
+                </tr>
+            </thead>
+            <tbody id="container">
+                <tr id="template">
+                    <td><b href="#" class="link"></b></td>
+                    <td class="price"></td>
+					<td><a href="#" class="mail"></a></td>
+                    
+                </tr>
+            </tbody>
+        </table>
+		</div>
+
+    </div>
+	
+	<script>
+
+	(function (){
+
+    $(init);
+
+	var fullStreetName = [];
+     var markers = [];
+	$.ajax({
+                url:"https://retsint.voitrix.com/listings?sortBy=price&dir=asc&q=Santa%20Barbara",
+				dataType: "json",
+                success: autoComplete
+            });
+			
+			function autoComplete(values) {
+				for (var x in values) {
+					
+					var listing = values[x];
+					fullStreetName[x] = listing.fullStreetName;
+					
+				}
+			}
+			
+		var options = {
+			data: fullStreetName,
+            theme: "dark"
+		};
+		
+		$("#search").easyAutocomplete(options);
+		
+      function init()
+      {
+        //$("#searchbtn").click(search);
+        
+        var movieTitle = $("#search");
+        var tbody = $("#container"); 
+        var template = $("#template").clone();
+        tbody.empty();
+
+        function search()
+        {
+            var title = movieTitle.val();
+			
+			
+			if(document.getElementById('Ascending').checked) {
+	
+				var x = $("#Ascending").val();
+				
+				}
+				else if(document.getElementById('Descending').checked) {
+				  var x = $("#Descending").val();
+				}
+			
+					
+
+            $.ajax({
+                
+                url:"https://retsint.voitrix.com/listings?sortBy=price&dir="+ x +"&q="+title,
+				dataType: "json",
+                success: renderAnswer
+            });
+        }
+
+        function renderAnswer(space)
+        {
+            //console.log(space);
+
+     for(var i = 0; i < markers.length; i++) {
+        markers[i].setMap(null);
+     }
+     
+     markers = [];
+            tbody.empty();
+            var pos = null;
+            var avgLat = position[0];
+            var avgLng = position[1];
+     
+            for(var m in space)
+            {
+                var spot = space[m];
+                var title = spot.fullStreetName;
+                var price = spot.listPrice;
+                var titlelink = spot.titleLink;
+				var latitude = parseFloat(spot.latitude);
+				var longitude = parseFloat(spot.longitude);
+				var agentEmail = spot.agentEmail;
+
+                //aakash added
+				//console.log(parseFloat(longitude));
+
+
+                pos = new google.maps.LatLng(latitude, longitude);
+                
+                makeMarker(map, pos);
+
+
+
+
+
+
+                //aakash added close
+
+
+
+
+                var tr = template.clone();
+
+                tr.find(".link")
+                    .attr("href", titlelink)
+                    .html(title);
+
+                tr.find(".price")
+                    .html(price);
+					
+					tr.find(".mail")
+                    .attr("href", agentEmail)
+                    .html(agentEmail);
+					//console.log("agent"+agentEmail);
+
+
+                tbody.append(tr);
+            }
+    
+        }
+		
+		
+		//map
+		
+		    var position = [34.443199, -119.764985 ];
+
+
+     var map = null;
+     
+    function initialize(position) {
+
+        var myOptions = {
+            zoom: 12,
+            streetViewControl: true,
+            scaleControl: true,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+
+        map = new google.maps.Map(document.getElementById('googlemaps'),
+            myOptions);
+
+
+        latLng = new google.maps.LatLng(position[0], position[1]);
+
+        map.setCenter(latLng);
+     
+        makeMarker(map, latLng);
+    }
+     
+     function makeMarker(map, latLng) {
+     
+        if(map == null)
+            return;
+     
+        marker = new google.maps.Marker({
+                                     position: latLng,
+                                     map: map,
+                                     draggable: false,
+                                     animation: google.maps.Animation.DROP
+                                     });
+     
+     markers.push(marker);
+     
+        //added toggel box for more info
+     
+        google.maps.event.addListener(marker, "click", function(marker) {
+                                   var latitude = this.position.lat();
+                                   var longitude = this.position.lng();
+                                   alert("lat :" +latitude +"lon :" +longitude)
+                                   
+                                   });
+        //end toggel box for more info
+
+     }
+     
+    initialize(position);
+     
+    google.maps.event.addDomListener(document.getElementById("searchbtn"), 'click', search);
+
+      
+    }
+})();
+	</script>
+	
+	
+	
+	
+	
+	
+</body>
+</html>
